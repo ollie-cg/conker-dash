@@ -1,3 +1,5 @@
+import { getDataDateRange } from '@/lib/queries'
+
 export interface FilterParams {
   startDate: string // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
@@ -14,31 +16,31 @@ function formatDate(d: Date): string {
 
 /**
  * Parse filters from URL search params.
- * Defaults: last 4 weeks, all products, all regions.
+ * Defaults: last 4 weeks from data's max date, all products, all regions.
  */
 export function parseFilters(
   searchParams: Record<string, string | string[] | undefined>,
 ): FilterParams {
-  // startDate: from search params or default to 28 days ago
-  let startDate: string
-  const fromParam = searchParams.from
-  if (typeof fromParam === 'string' && fromParam.length > 0) {
-    startDate = fromParam
-  } else {
-    const d = new Date()
-    d.setDate(d.getDate() - 28)
-    startDate = formatDate(d)
-  }
+  const { maxDate } = getDataDateRange()
 
-  // endDate: from search params or default to yesterday
+  // endDate: from search params or default to maxDate from data
   let endDate: string
   const toParam = searchParams.to
   if (typeof toParam === 'string' && toParam.length > 0) {
     endDate = toParam
   } else {
-    const d = new Date()
-    d.setDate(d.getDate() - 1)
-    endDate = formatDate(d)
+    endDate = maxDate
+  }
+
+  // startDate: from search params or default to 28 days before endDate
+  let startDate: string
+  const fromParam = searchParams.from
+  if (typeof fromParam === 'string' && fromParam.length > 0) {
+    startDate = fromParam
+  } else {
+    const d = new Date(endDate + 'T00:00:00')
+    d.setDate(d.getDate() - 28)
+    startDate = formatDate(d)
   }
 
   // productIds: comma-separated string -> number[], or empty = all

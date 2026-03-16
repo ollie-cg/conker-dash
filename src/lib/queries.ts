@@ -1,45 +1,84 @@
-import { db } from '@/db'
-import {
-  products,
-  stores,
-  distribution,
-  sales,
-  forecasts,
-  targets,
-  risksAndOpps,
-} from '@/db/schema'
-import {
-  eq,
-  and,
-  gte,
-  lte,
-  sql,
-  sum,
-  countDistinct,
-  desc,
-  asc,
-  inArray,
-  isNull,
-  or,
-  max,
-} from 'drizzle-orm'
+import productsData from '@/data/products.json'
+import storesData from '@/data/stores.json'
+import distributionDataRaw from '@/data/distribution.json'
+
+interface DistributionRow {
+  id: number
+  productId: number
+  storeId: number
+  startDate: string
+  endDate: string | null
+}
+const distributionData: DistributionRow[] = distributionDataRaw
+import salesData from '@/data/sales.json'
+import forecastsData from '@/data/forecasts.json'
+import targetsData from '@/data/targets.json'
+import risksAndOppsData from '@/data/risks-and-opps.json'
+
+// ---------------------------------------------------------------------------
+// Lookup maps (built once at module load)
+// ---------------------------------------------------------------------------
+const storeMap = new Map(storesData.map((s) => [s.id, s]))
+const productMap = new Map(productsData.map((p) => [p.id, p]))
+
+// Quick region lookup: storeId -> region
+const storeRegionMap = new Map(storesData.map((s) => [s.id, s.region]))
+
+// ---------------------------------------------------------------------------
+// Helper: ISO week start (Monday)
+// ---------------------------------------------------------------------------
+function getMonday(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().slice(0, 10)
+}
+
+// ---------------------------------------------------------------------------
+// Helper: filter sales by date range and optional productIds
+// ---------------------------------------------------------------------------
+function filterSales(params: {
+  productIds?: number[]
+  startDate: string
+  endDate: string
+}) {
+  let data = salesData.filter(
+    (s) => s.date >= params.startDate && s.date <= params.endDate,
+  )
+  if (params.productIds && params.productIds.length > 0) {
+    const ids = new Set(params.productIds)
+    data = data.filter((s) => ids.has(s.productId))
+  }
+  return data
+}
+
+// ---------------------------------------------------------------------------
+// NEW: getDataDateRange
+// ---------------------------------------------------------------------------
+export function getDataDateRange(): { minDate: string; maxDate: string } {
+  let minDate = salesData[0]?.date ?? ''
+  let maxDate = salesData[0]?.date ?? ''
+  for (const s of salesData) {
+    if (s.date < minDate) minDate = s.date
+    if (s.date > maxDate) maxDate = s.date
+  }
+  return { minDate, maxDate }
+}
 
 // ---------------------------------------------------------------------------
 // 1. getProducts
 // ---------------------------------------------------------------------------
 export async function getProducts() {
-  return db.select().from(products).orderBy(asc(products.id))
+  return [...productsData].sort((a, b) => a.id - b.id)
 }
 
 // ---------------------------------------------------------------------------
 // 2. getRegions
 // ---------------------------------------------------------------------------
 export async function getRegions() {
-  const rows = await db
-    .selectDistinct({ region: stores.region })
-    .from(stores)
-    .orderBy(asc(stores.region))
-  return rows.map((r) => r.region)
+  const regions = Array.from(new Set(storesData.map((s) => s.region))).sort()
+  return regions
 }
 
 // ---------------------------------------------------------------------------
@@ -50,26 +89,14 @@ export async function getSalesForPeriod(params: {
   startDate: string
   endDate: string
 }): Promise<{ totalUnits: number; totalRevenue: number }> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  let totalUnits = 0
+  let totalRevenue = 0
+  for (const s of data) {
+    totalUnits += s.units
+    totalRevenue += Number(s.revenue)
   }
-
-  const [row] = await db
-    .select({
-      totalUnits: sum(sales.units),
-      totalRevenue: sum(sales.revenue),
-    })
-    .from(sales)
-    .where(and(...conditions))
-
-  return {
-    totalUnits: Number(row?.totalUnits ?? 0),
-    totalRevenue: Number(row?.totalRevenue ?? 0),
-  }
+  return { totalUnits, totalRevenue }
 }
 
 // ---------------------------------------------------------------------------
@@ -80,30 +107,20 @@ export async function getSalesByDay(params: {
   startDate: string
   endDate: string
 }): Promise<{ date: string; units: number; revenue: number }[]> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const map = new Map<string, { units: number; revenue: number }>()
+  for (const s of data) {
+    const existing = map.get(s.date)
+    if (existing) {
+      existing.units += s.units
+      existing.revenue += Number(s.revenue)
+    } else {
+      map.set(s.date, { units: s.units, revenue: Number(s.revenue) })
+    }
   }
-
-  const rows = await db
-    .select({
-      date: sales.date,
-      units: sum(sales.units),
-      revenue: sum(sales.revenue),
-    })
-    .from(sales)
-    .where(and(...conditions))
-    .groupBy(sales.date)
-    .orderBy(asc(sales.date))
-
-  return rows.map((r) => ({
-    date: r.date,
-    units: Number(r.units ?? 0),
-    revenue: Number(r.revenue ?? 0),
-  }))
+  return Array.from(map.entries())
+    .map(([date, v]) => ({ date, units: v.units, revenue: v.revenue }))
+    .sort((a, b) => a.date.localeCompare(b.date))
 }
 
 // ---------------------------------------------------------------------------
@@ -114,31 +131,22 @@ export async function getSalesByRegion(params: {
   startDate: string
   endDate: string
 }): Promise<{ region: string; units: number; revenue: number }[]> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const map = new Map<string, { units: number; revenue: number }>()
+  for (const s of data) {
+    const region = storeRegionMap.get(s.storeId)
+    if (!region) continue
+    const existing = map.get(region)
+    if (existing) {
+      existing.units += s.units
+      existing.revenue += Number(s.revenue)
+    } else {
+      map.set(region, { units: s.units, revenue: Number(s.revenue) })
+    }
   }
-
-  const rows = await db
-    .select({
-      region: stores.region,
-      units: sum(sales.units),
-      revenue: sum(sales.revenue),
-    })
-    .from(sales)
-    .innerJoin(stores, eq(sales.storeId, stores.id))
-    .where(and(...conditions))
-    .groupBy(stores.region)
-    .orderBy(desc(sum(sales.revenue)))
-
-  return rows.map((r) => ({
-    region: r.region,
-    units: Number(r.units ?? 0),
-    revenue: Number(r.revenue ?? 0),
-  }))
+  return Array.from(map.entries())
+    .map(([region, v]) => ({ region, units: v.units, revenue: v.revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
 }
 
 // ---------------------------------------------------------------------------
@@ -151,31 +159,22 @@ export async function getSalesByProduct(params: {
 }): Promise<
   { productId: number; productName: string; units: number; revenue: number }[]
 > {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const map = new Map<number, { units: number; revenue: number }>()
+  for (const s of data) {
+    const existing = map.get(s.productId)
+    if (existing) {
+      existing.units += s.units
+      existing.revenue += Number(s.revenue)
+    } else {
+      map.set(s.productId, { units: s.units, revenue: Number(s.revenue) })
+    }
   }
-
-  const rows = await db
-    .select({
-      productId: sales.productId,
-      productName: products.name,
-      units: sum(sales.units),
-      revenue: sum(sales.revenue),
-    })
-    .from(sales)
-    .innerJoin(products, eq(sales.productId, products.id))
-    .where(and(...conditions))
-    .groupBy(sales.productId, products.name)
-
-  return rows.map((r) => ({
-    productId: r.productId,
-    productName: r.productName,
-    units: Number(r.units ?? 0),
-    revenue: Number(r.revenue ?? 0),
+  return Array.from(map.entries()).map(([productId, v]) => ({
+    productId,
+    productName: productMap.get(productId)?.name ?? '',
+    units: v.units,
+    revenue: v.revenue,
   }))
 }
 
@@ -186,23 +185,17 @@ export async function getStoresStocking(params: {
   productIds?: number[]
   asOfDate: string
 }): Promise<{ count: number }> {
-  const conditions = [
-    lte(distribution.startDate, params.asOfDate),
-    or(
-      isNull(distribution.endDate),
-      gte(distribution.endDate, params.asOfDate),
-    ),
-  ]
+  let data = distributionData.filter(
+    (d) =>
+      d.startDate <= params.asOfDate &&
+      (d.endDate === null || d.endDate >= params.asOfDate),
+  )
   if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(distribution.productId, params.productIds))
+    const ids = new Set(params.productIds)
+    data = data.filter((d) => ids.has(d.productId))
   }
-
-  const [row] = await db
-    .select({ count: countDistinct(distribution.storeId) })
-    .from(distribution)
-    .where(and(...conditions))
-
-  return { count: Number(row?.count ?? 0) }
+  const distinctStores = new Set(data.map((d) => d.storeId))
+  return { count: distinctStores.size }
 }
 
 // ---------------------------------------------------------------------------
@@ -213,20 +206,9 @@ export async function getStoresScanning(params: {
   startDate: string
   endDate: string
 }): Promise<{ count: number }> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
-  }
-
-  const [row] = await db
-    .select({ count: countDistinct(sales.storeId) })
-    .from(sales)
-    .where(and(...conditions))
-
-  return { count: Number(row?.count ?? 0) }
+  const data = filterSales(params)
+  const distinctStores = new Set(data.map((s) => s.storeId))
+  return { count: distinctStores.size }
 }
 
 // ---------------------------------------------------------------------------
@@ -237,32 +219,25 @@ export async function getWeeklySales(params: {
   startDate: string
   endDate: string
 }): Promise<{ weekStart: string; units: number; revenue: number }[]> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const map = new Map<string, { units: number; revenue: number }>()
+  for (const s of data) {
+    const weekStart = getMonday(s.date)
+    const existing = map.get(weekStart)
+    if (existing) {
+      existing.units += s.units
+      existing.revenue += Number(s.revenue)
+    } else {
+      map.set(weekStart, { units: s.units, revenue: Number(s.revenue) })
+    }
   }
-
-  const weekStartExpr = sql<string>`date_trunc('week', ${sales.date}::date)::date`
-
-  const rows = await db
-    .select({
-      weekStart: weekStartExpr,
-      units: sum(sales.units),
-      revenue: sum(sales.revenue),
-    })
-    .from(sales)
-    .where(and(...conditions))
-    .groupBy(weekStartExpr)
-    .orderBy(asc(weekStartExpr))
-
-  return rows.map((r) => ({
-    weekStart: String(r.weekStart),
-    units: Number(r.units ?? 0),
-    revenue: Number(r.revenue ?? 0),
-  }))
+  return Array.from(map.entries())
+    .map(([weekStart, v]) => ({
+      weekStart,
+      units: v.units,
+      revenue: v.revenue,
+    }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
 }
 
 // ---------------------------------------------------------------------------
@@ -273,30 +248,20 @@ export async function getWeeklyStoresScanning(params: {
   startDate: string
   endDate: string
 }): Promise<{ weekStart: string; count: number }[]> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const map = new Map<string, Set<number>>()
+  for (const s of data) {
+    const weekStart = getMonday(s.date)
+    let storeSet = map.get(weekStart)
+    if (!storeSet) {
+      storeSet = new Set()
+      map.set(weekStart, storeSet)
+    }
+    storeSet.add(s.storeId)
   }
-
-  const weekStartExpr = sql<string>`date_trunc('week', ${sales.date}::date)::date`
-
-  const rows = await db
-    .select({
-      weekStart: weekStartExpr,
-      count: countDistinct(sales.storeId),
-    })
-    .from(sales)
-    .where(and(...conditions))
-    .groupBy(weekStartExpr)
-    .orderBy(asc(weekStartExpr))
-
-  return rows.map((r) => ({
-    weekStart: String(r.weekStart),
-    count: Number(r.count ?? 0),
-  }))
+  return Array.from(map.entries())
+    .map(([weekStart, stores]) => ({ weekStart, count: stores.size }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
 }
 
 // ---------------------------------------------------------------------------
@@ -306,32 +271,30 @@ export async function getStoresStockingByRegion(params: {
   productIds?: number[]
   asOfDate: string
 }): Promise<{ region: string; count: number }[]> {
-  const conditions = [
-    lte(distribution.startDate, params.asOfDate),
-    or(
-      isNull(distribution.endDate),
-      gte(distribution.endDate, params.asOfDate),
-    ),
-  ]
+  let data = distributionData.filter(
+    (d) =>
+      d.startDate <= params.asOfDate &&
+      (d.endDate === null || d.endDate >= params.asOfDate),
+  )
   if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(distribution.productId, params.productIds))
+    const ids = new Set(params.productIds)
+    data = data.filter((d) => ids.has(d.productId))
   }
-
-  const rows = await db
-    .select({
-      region: stores.region,
-      count: countDistinct(distribution.storeId),
-    })
-    .from(distribution)
-    .innerJoin(stores, eq(distribution.storeId, stores.id))
-    .where(and(...conditions))
-    .groupBy(stores.region)
-    .orderBy(asc(stores.region))
-
-  return rows.map((r) => ({
-    region: r.region,
-    count: Number(r.count ?? 0),
-  }))
+  // Group by region, counting distinct stores per region
+  const regionStores = new Map<string, Set<number>>()
+  for (const d of data) {
+    const region = storeRegionMap.get(d.storeId)
+    if (!region) continue
+    let storeSet = regionStores.get(region)
+    if (!storeSet) {
+      storeSet = new Set()
+      regionStores.set(region, storeSet)
+    }
+    storeSet.add(d.storeId)
+  }
+  return Array.from(regionStores.entries())
+    .map(([region, stores]) => ({ region, count: stores.size }))
+    .sort((a, b) => a.region.localeCompare(b.region))
 }
 
 // ---------------------------------------------------------------------------
@@ -342,29 +305,21 @@ export async function getStoresScanningByRegion(params: {
   startDate: string
   endDate: string
 }): Promise<{ region: string; count: number }[]> {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-  ]
-  if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+  const data = filterSales(params)
+  const regionStores = new Map<string, Set<number>>()
+  for (const s of data) {
+    const region = storeRegionMap.get(s.storeId)
+    if (!region) continue
+    let storeSet = regionStores.get(region)
+    if (!storeSet) {
+      storeSet = new Set()
+      regionStores.set(region, storeSet)
+    }
+    storeSet.add(s.storeId)
   }
-
-  const rows = await db
-    .select({
-      region: stores.region,
-      count: countDistinct(sales.storeId),
-    })
-    .from(sales)
-    .innerJoin(stores, eq(sales.storeId, stores.id))
-    .where(and(...conditions))
-    .groupBy(stores.region)
-    .orderBy(asc(stores.region))
-
-  return rows.map((r) => ({
-    region: r.region,
-    count: Number(r.count ?? 0),
-  }))
+  return Array.from(regionStores.entries())
+    .map(([region, stores]) => ({ region, count: stores.size }))
+    .sort((a, b) => a.region.localeCompare(b.region))
 }
 
 // ---------------------------------------------------------------------------
@@ -375,27 +330,23 @@ export async function getForecasts(params: {
   startDate: string
   endDate: string
 }) {
-  const conditions = [
-    gte(forecasts.weekStart, params.startDate),
-    lte(forecasts.weekStart, params.endDate),
-  ]
+  let data = forecastsData.filter(
+    (f) => f.weekStart >= params.startDate && f.weekStart <= params.endDate,
+  )
   if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(forecasts.productId, params.productIds))
+    const ids = new Set(params.productIds)
+    data = data.filter((f) => ids.has(f.productId))
   }
-
-  return db
-    .select({
-      id: forecasts.id,
-      productId: forecasts.productId,
-      productName: products.name,
-      weekStart: forecasts.weekStart,
-      units: forecasts.units,
-      revenue: forecasts.revenue,
-    })
-    .from(forecasts)
-    .innerJoin(products, eq(forecasts.productId, products.id))
-    .where(and(...conditions))
-    .orderBy(asc(forecasts.weekStart))
+  return data
+    .map((f) => ({
+      id: f.id,
+      productId: f.productId,
+      productName: productMap.get(f.productId)?.name ?? '',
+      weekStart: f.weekStart,
+      units: f.units,
+      revenue: f.revenue,
+    }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
 }
 
 // ---------------------------------------------------------------------------
@@ -406,27 +357,23 @@ export async function getTargets(params: {
   startDate: string
   endDate: string
 }) {
-  const conditions = [
-    gte(targets.weekStart, params.startDate),
-    lte(targets.weekStart, params.endDate),
-  ]
+  let data = targetsData.filter(
+    (t) => t.weekStart >= params.startDate && t.weekStart <= params.endDate,
+  )
   if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(targets.productId, params.productIds))
+    const ids = new Set(params.productIds)
+    data = data.filter((t) => ids.has(t.productId))
   }
-
-  return db
-    .select({
-      id: targets.id,
-      productId: targets.productId,
-      productName: products.name,
-      weekStart: targets.weekStart,
-      units: targets.units,
-      revenue: targets.revenue,
-    })
-    .from(targets)
-    .innerJoin(products, eq(targets.productId, products.id))
-    .where(and(...conditions))
-    .orderBy(asc(targets.weekStart))
+  return data
+    .map((t) => ({
+      id: t.id,
+      productId: t.productId,
+      productName: productMap.get(t.productId)?.name ?? '',
+      weekStart: t.weekStart,
+      units: t.units,
+      revenue: t.revenue,
+    }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
 }
 
 // ---------------------------------------------------------------------------
@@ -437,37 +384,140 @@ export async function getRisksAndOpps(params?: {
   type?: string
   productId?: number
 }) {
-  const conditions = []
+  let data = [...risksAndOppsData]
   if (params?.status) {
-    conditions.push(eq(risksAndOpps.status, params.status))
+    data = data.filter((r) => r.status === params.status)
   }
   if (params?.type) {
-    conditions.push(eq(risksAndOpps.type, params.type))
+    data = data.filter((r) => r.type === params.type)
   }
   if (params?.productId) {
-    conditions.push(eq(risksAndOpps.productId, params.productId))
+    data = data.filter((r) => r.productId === params.productId)
   }
-
-  return db
-    .select({
-      id: risksAndOpps.id,
-      productId: risksAndOpps.productId,
-      productName: products.name,
-      type: risksAndOpps.type,
-      title: risksAndOpps.title,
-      description: risksAndOpps.description,
-      status: risksAndOpps.status,
-      createdAt: risksAndOpps.createdAt,
-      updatedAt: risksAndOpps.updatedAt,
-    })
-    .from(risksAndOpps)
-    .leftJoin(products, eq(risksAndOpps.productId, products.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(risksAndOpps.createdAt))
+  return data
+    .map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      productName: productMap.get(r.productId)?.name ?? null,
+      type: r.type,
+      title: r.title,
+      description: r.description,
+      status: r.status,
+      createdAt: new Date(r.createdAt),
+      updatedAt: new Date(r.updatedAt),
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 }
 
 // ---------------------------------------------------------------------------
-// 16. getStoreScanningDetail
+// 16. getProductsSummary
+// ---------------------------------------------------------------------------
+export async function getProductsSummary(params: {
+  startDate: string
+  endDate: string
+  regions?: string[]
+}): Promise<
+  {
+    id: number
+    name: string
+    ean: string | null
+    packSize: string | null
+    rrp: number
+    revenue: number
+    units: number
+    storesStocking: number
+    storesScanning: number
+    ros: number
+  }[]
+> {
+  // Calculate number of weeks in the period for ROS
+  const startMs = new Date(params.startDate + 'T00:00:00').getTime()
+  const endMs = new Date(params.endDate + 'T00:00:00').getTime()
+  const weeks = Math.max(1, (endMs - startMs) / (7 * 24 * 60 * 60 * 1000))
+
+  // Optional region filter: build a set of valid storeIds
+  let regionStoreIds: Set<number> | null = null
+  if (params.regions && params.regions.length > 0) {
+    const regionSet = new Set(params.regions)
+    regionStoreIds = new Set(
+      storesData.filter((s) => regionSet.has(s.region)).map((s) => s.id),
+    )
+  }
+
+  // Filter sales by date range (and optionally by region via storeId)
+  let salesFiltered = salesData.filter(
+    (s) => s.date >= params.startDate && s.date <= params.endDate,
+  )
+  if (regionStoreIds) {
+    salesFiltered = salesFiltered.filter((s) => regionStoreIds!.has(s.storeId))
+  }
+
+  // Per-product sales aggregation
+  const salesAggMap = new Map<
+    number,
+    { revenue: number; units: number; scanningStores: Set<number> }
+  >()
+  for (const s of salesFiltered) {
+    let agg = salesAggMap.get(s.productId)
+    if (!agg) {
+      agg = { revenue: 0, units: 0, scanningStores: new Set() }
+      salesAggMap.set(s.productId, agg)
+    }
+    agg.revenue += Number(s.revenue)
+    agg.units += s.units
+    agg.scanningStores.add(s.storeId)
+  }
+
+  // Per-product stocking (distribution) counts
+  let distFiltered = distributionData.filter(
+    (d) =>
+      d.startDate <= params.endDate &&
+      (d.endDate === null || d.endDate >= params.startDate),
+  )
+  if (regionStoreIds) {
+    distFiltered = distFiltered.filter((d) => regionStoreIds!.has(d.storeId))
+  }
+
+  const stockingMap = new Map<number, Set<number>>()
+  for (const d of distFiltered) {
+    let storeSet = stockingMap.get(d.productId)
+    if (!storeSet) {
+      storeSet = new Set()
+      stockingMap.set(d.productId, storeSet)
+    }
+    storeSet.add(d.storeId)
+  }
+
+  // Build result for all products, sorted by name
+  const allProducts = [...productsData].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
+
+  return allProducts.map((p) => {
+    const sAgg = salesAggMap.get(p.id)
+    const revenue = sAgg?.revenue ?? 0
+    const units = sAgg?.units ?? 0
+    const storesScanning = sAgg?.scanningStores.size ?? 0
+    const storesStocking = stockingMap.get(p.id)?.size ?? 0
+    const ros = storesScanning > 0 ? revenue / storesScanning / weeks : 0
+
+    return {
+      id: p.id,
+      name: p.name,
+      ean: p.ean ?? null,
+      packSize: p.packSize ?? null,
+      rrp: Number(p.rrp ?? 0),
+      revenue,
+      units,
+      storesStocking,
+      storesScanning,
+      ros,
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------
+// 17. getStoreScanningDetail
 // ---------------------------------------------------------------------------
 export async function getStoreScanningDetail(params: {
   productIds?: number[]
@@ -484,35 +534,52 @@ export async function getStoreScanningDetail(params: {
     lastScanDate: string
   }[]
 > {
-  const conditions = [
-    gte(sales.date, params.startDate),
-    lte(sales.date, params.endDate),
-    eq(stores.region, params.region),
-  ]
+  // Get storeIds in the given region
+  const regionStoreIds = new Set(
+    storesData.filter((s) => s.region === params.region).map((s) => s.id),
+  )
+
+  // Filter sales by date range, region, and optionally productIds
+  let data = salesData.filter(
+    (s) =>
+      s.date >= params.startDate &&
+      s.date <= params.endDate &&
+      regionStoreIds.has(s.storeId),
+  )
   if (params.productIds && params.productIds.length > 0) {
-    conditions.push(inArray(sales.productId, params.productIds))
+    const ids = new Set(params.productIds)
+    data = data.filter((s) => ids.has(s.productId))
   }
 
-  const rows = await db
-    .select({
-      storeId: stores.id,
-      storeName: stores.name,
-      format: stores.format,
-      totalUnits: sum(sales.units),
-      totalRevenue: sum(sales.revenue),
-      lastScanDate: max(sales.date),
-    })
-    .from(sales)
-    .innerJoin(stores, eq(sales.storeId, stores.id))
-    .where(and(...conditions))
-    .groupBy(stores.id, stores.name, stores.format)
+  // Group by store
+  const storeAgg = new Map<
+    number,
+    { totalUnits: number; totalRevenue: number; lastScanDate: string }
+  >()
+  for (const s of data) {
+    const existing = storeAgg.get(s.storeId)
+    if (existing) {
+      existing.totalUnits += s.units
+      existing.totalRevenue += Number(s.revenue)
+      if (s.date > existing.lastScanDate) existing.lastScanDate = s.date
+    } else {
+      storeAgg.set(s.storeId, {
+        totalUnits: s.units,
+        totalRevenue: Number(s.revenue),
+        lastScanDate: s.date,
+      })
+    }
+  }
 
-  return rows.map((r) => ({
-    storeId: r.storeId,
-    storeName: r.storeName,
-    format: r.format,
-    totalUnits: Number(r.totalUnits ?? 0),
-    totalRevenue: Number(r.totalRevenue ?? 0),
-    lastScanDate: String(r.lastScanDate ?? ''),
-  }))
+  return Array.from(storeAgg.entries()).map(([storeId, v]) => {
+    const store = storeMap.get(storeId)
+    return {
+      storeId,
+      storeName: store?.name ?? '',
+      format: store?.format ?? '',
+      totalUnits: v.totalUnits,
+      totalRevenue: v.totalRevenue,
+      lastScanDate: v.lastScanDate,
+    }
+  })
 }

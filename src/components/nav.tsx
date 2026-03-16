@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
+  Package,
   TrendingUp,
   Store,
   Gauge,
@@ -13,6 +14,7 @@ import {
 
 const links = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/products', label: 'Products', icon: Package },
   { href: '/sales', label: 'Sales', icon: TrendingUp },
   { href: '/distribution', label: 'Distribution', icon: Store },
   { href: '/ros', label: 'Rate of Sale', icon: Gauge },

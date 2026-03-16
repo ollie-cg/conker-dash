@@ -9,6 +9,7 @@ import {
   getForecasts,
   getTargets,
   getRisksAndOpps,
+  getDataDateRange,
 } from "@/lib/queries"
 import {
   formatCurrency,
@@ -41,7 +42,8 @@ function fmt(d: Date): string {
 // ---------------------------------------------------------------------------
 
 export default async function OverviewPage() {
-  const today = new Date()
+  const { maxDate } = getDataDateRange()
+  const today = new Date(maxDate + 'T00:00:00')
 
   // This week: Monday..Sunday
   const thisMonday = getMonday(today)

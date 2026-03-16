@@ -1,16 +1,11 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
-  Plus,
-  Pencil,
-  Trash2,
   AlertTriangle,
   TrendingUp,
 } from 'lucide-react'
-import RiskForm from '@/components/risk-form'
-import { deleteRiskOrOpp } from './actions'
 
 interface RiskItem {
   id: number
@@ -41,11 +36,6 @@ export default function RisksClient({ items, products }: RisksClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
-
-  // Modal state
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<RiskItem | null>(null)
 
   // Read filters from URL
   const currentStatus = searchParams.get('status') ?? 'all'
@@ -67,28 +57,6 @@ export default function RisksClient({ items, products }: RisksClientProps) {
     },
     [router, pathname, searchParams],
   )
-
-  function handleAdd() {
-    setEditingItem(null)
-    setFormOpen(true)
-  }
-
-  function handleEdit(item: RiskItem) {
-    setEditingItem(item)
-    setFormOpen(true)
-  }
-
-  function handleDelete(id: number, title: string) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
-    startTransition(async () => {
-      await deleteRiskOrOpp(id)
-    })
-  }
-
-  function handleClose() {
-    setFormOpen(false)
-    setEditingItem(null)
-  }
 
   // Toggle button helper
   function ToggleGroup({
@@ -130,14 +98,6 @@ export default function RisksClient({ items, products }: RisksClientProps) {
             {items.length} item{items.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 transition-colors"
-        >
-          <Plus size={16} />
-          Add
-        </button>
       </div>
 
       {/* Filter row */}
@@ -200,16 +160,13 @@ export default function RisksClient({ items, products }: RisksClientProps) {
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                 Created
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-500">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">
-                  No items found. Try changing your filters or add a new item.
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400">
+                  No items found. Try changing your filters.
                 </td>
               </tr>
             ) : (
@@ -257,55 +214,12 @@ export default function RisksClient({ items, products }: RisksClientProps) {
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
                     {formatDate(item.createdAt)}
                   </td>
-
-                  {/* Actions */}
-                  <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(item)}
-                        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id, item.title)}
-                        disabled={isPending}
-                        className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-                        title="Delete"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-
-      {/* Form modal */}
-      {formOpen && (
-        <RiskForm
-          products={products}
-          item={
-            editingItem
-              ? {
-                  id: editingItem.id,
-                  type: editingItem.type,
-                  productId: editingItem.productId,
-                  title: editingItem.title,
-                  description: editingItem.description,
-                  status: editingItem.status,
-                }
-              : undefined
-          }
-          onClose={handleClose}
-        />
-      )}
     </>
   )
 }

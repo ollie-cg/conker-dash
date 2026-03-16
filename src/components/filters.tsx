@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 interface FiltersProps {
   products: { id: number; name: string }[]
   regions: string[]
+  hideProducts?: boolean
 }
 
 type Preset = {
@@ -144,7 +145,7 @@ function MultiSelect({
 
 // ─── Filters component ──────────────────────────────────────────────────────
 
-export default function Filters({ products, regions }: FiltersProps) {
+export default function Filters({ products, regions, hideProducts }: FiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -262,13 +263,15 @@ export default function Filters({ products, regions }: FiltersProps) {
       <div className="h-6 w-px bg-slate-200" />
 
       {/* Product selector */}
-      <MultiSelect
-        label="Products"
-        allLabel="All Products"
-        options={products.map((p) => ({ value: String(p.id), label: p.name }))}
-        selected={currentProducts}
-        onChange={handleProductsChange}
-      />
+      {!hideProducts && (
+        <MultiSelect
+          label="Products"
+          allLabel="All Products"
+          options={products.map((p) => ({ value: String(p.id), label: p.name }))}
+          selected={currentProducts}
+          onChange={handleProductsChange}
+        />
+      )}
 
       {/* Region selector */}
       <MultiSelect
