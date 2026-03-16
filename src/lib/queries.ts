@@ -15,7 +15,6 @@ import {
   lte,
   sql,
   sum,
-  count,
   countDistinct,
   desc,
   asc,

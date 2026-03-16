@@ -5,7 +5,7 @@ dotenv.config({ path: '.env.local' })
 dotenv.config() // .env as fallback (won't overwrite already-set vars)
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { sql } from 'drizzle-orm'
+// sql import removed — not used in seed script
 import {
   products,
   stores,

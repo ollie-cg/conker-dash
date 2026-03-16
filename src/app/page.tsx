@@ -54,6 +54,12 @@ export default async function OverviewPage() {
   const lastSunday = new Date(lastMonday)
   lastSunday.setDate(lastSunday.getDate() + 6)
 
+  // Two weeks ago: Monday..Sunday (for WoW comparison when falling back)
+  const twoWeeksAgoMonday = new Date(lastMonday)
+  twoWeeksAgoMonday.setDate(twoWeeksAgoMonday.getDate() - 7)
+  const twoWeeksAgoSunday = new Date(twoWeeksAgoMonday)
+  twoWeeksAgoSunday.setDate(twoWeeksAgoSunday.getDate() + 6)
+
   // 12 weeks back from thisMonday
   const twelveWeeksAgo = new Date(thisMonday)
   twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7)
@@ -62,6 +68,8 @@ export default async function OverviewPage() {
   const thisWeekEnd = fmt(thisSunday)
   const lastWeekStart = fmt(lastMonday)
   const lastWeekEnd = fmt(lastSunday)
+  const twoWeeksAgoStart = fmt(twoWeeksAgoMonday)
+  const twoWeeksAgoEnd = fmt(twoWeeksAgoSunday)
   const twelveWeeksAgoStr = fmt(twelveWeeksAgo)
 
   // -------------------------------------------------------------------------
@@ -70,17 +78,21 @@ export default async function OverviewPage() {
   const [
     thisWeekSales,
     lastWeekSales,
+    twoWeeksAgoSales,
     storesStocking,
-    storesScanning,
+    thisWeekStoresScanning,
     lastWeekStoresScanning,
     weeklyS,
     weeklyStoresScanning,
-    forecastRows,
-    targetRows,
+    thisWeekForecasts,
+    lastWeekForecasts,
+    thisWeekTargets,
+    lastWeekTargets,
     openRisksAndOpps,
   ] = await Promise.all([
     getSalesForPeriod({ startDate: thisWeekStart, endDate: thisWeekEnd }),
     getSalesForPeriod({ startDate: lastWeekStart, endDate: lastWeekEnd }),
+    getSalesForPeriod({ startDate: twoWeeksAgoStart, endDate: twoWeeksAgoEnd }),
     getStoresStocking({ asOfDate: fmt(today) }),
     getStoresScanning({ startDate: thisWeekStart, endDate: thisWeekEnd }),
     getStoresScanning({ startDate: lastWeekStart, endDate: lastWeekEnd }),
@@ -90,51 +102,70 @@ export default async function OverviewPage() {
       endDate: thisWeekEnd,
     }),
     getForecasts({ startDate: thisWeekStart, endDate: thisWeekEnd }),
+    getForecasts({ startDate: lastWeekStart, endDate: lastWeekEnd }),
     getTargets({ startDate: thisWeekStart, endDate: thisWeekEnd }),
+    getTargets({ startDate: lastWeekStart, endDate: lastWeekEnd }),
     getRisksAndOpps({ status: "open" }),
   ])
+
+  // -------------------------------------------------------------------------
+  // Smart period selection: if "this week" has no data, fall back to last week
+  // -------------------------------------------------------------------------
+  const thisWeekHasData = thisWeekSales.totalRevenue > 0
+
+  // Primary period = the week we display as "current"
+  // Comparison period = the week before the primary period (for WoW)
+  const primarySales = thisWeekHasData ? thisWeekSales : lastWeekSales
+  const comparisonSales = thisWeekHasData ? lastWeekSales : twoWeeksAgoSales
+  const primaryScanning = thisWeekHasData
+    ? thisWeekStoresScanning
+    : lastWeekStoresScanning
+  const forecastRows = thisWeekHasData ? thisWeekForecasts : lastWeekForecasts
+  const targetRows = thisWeekHasData ? thisWeekTargets : lastWeekTargets
+
+  const periodLabel = thisWeekHasData ? "This Week" : "Last Week"
+  const comparisonLabel = thisWeekHasData ? "WoW" : "vs Prior Week"
 
   // -------------------------------------------------------------------------
   // Derived KPI values
   // -------------------------------------------------------------------------
 
-  // Sales & Units this week / last week
-  const salesThisWeek = thisWeekSales.totalRevenue
-  const salesLastWeek = lastWeekSales.totalRevenue
-  const unitsThisWeek = thisWeekSales.totalUnits
-  const unitsLastWeek = lastWeekSales.totalUnits
+  // Sales & Units
+  const salesPrimary = primarySales.totalRevenue
+  const salesComparison = comparisonSales.totalRevenue
+  const unitsPrimary = primarySales.totalUnits
+  const unitsComparison = comparisonSales.totalUnits
 
-  const salesWoW = percentChange(salesThisWeek, salesLastWeek)
-  const unitsWoW = percentChange(unitsThisWeek, unitsLastWeek)
+  const salesWoW = percentChange(salesPrimary, salesComparison)
+  const unitsWoW = percentChange(unitsPrimary, unitsComparison)
 
   // Stores
   const stockingCount = storesStocking.count
-  const scanningCount = storesScanning.count
+  const scanningCount = primaryScanning.count
   const scanningPct =
     stockingCount > 0 ? (scanningCount / stockingCount) * 100 : 0
 
   // ROS / store / week
-  const rosThisWeek = stockingCount > 0 ? salesThisWeek / stockingCount : 0
-  const lastWeekStockingForRos = stockingCount // approximate — stocking doesn't change fast
-  const rosLastWeek =
-    lastWeekStockingForRos > 0 ? salesLastWeek / lastWeekStockingForRos : 0
-  const rosWoW = percentChange(rosThisWeek, rosLastWeek)
+  const rosPrimary = stockingCount > 0 ? salesPrimary / stockingCount : 0
+  const rosComparison =
+    stockingCount > 0 ? salesComparison / stockingCount : 0
+  const rosWoW = percentChange(rosPrimary, rosComparison)
 
-  // Forecast (sum all products for this week)
+  // Forecast (sum all products for period)
   const forecastRevenue = forecastRows.reduce(
     (acc, r) => acc + Number(r.revenue),
     0
   )
   const vsForecast =
-    forecastRevenue > 0 ? (salesThisWeek / forecastRevenue) * 100 : 0
+    forecastRevenue > 0 ? (salesPrimary / forecastRevenue) * 100 : 0
 
-  // Target (sum all products for this week)
+  // Target (sum all products for period)
   const targetRevenue = targetRows.reduce(
     (acc, r) => acc + Number(r.revenue),
     0
   )
   const vsTarget =
-    targetRevenue > 0 ? (salesThisWeek / targetRevenue) * 100 : 0
+    targetRevenue > 0 ? (salesPrimary / targetRevenue) * 100 : 0
 
   // Risks & Opps
   const openRisks = openRisksAndOpps.filter((r) => r.type === "risk")
@@ -162,7 +193,7 @@ export default async function OverviewPage() {
 
   function changeStr(val: number): string {
     const sign = val > 0 ? "+" : ""
-    return `${sign}${val.toFixed(1)}% WoW`
+    return `${sign}${val.toFixed(1)}% ${comparisonLabel}`
   }
 
   // -------------------------------------------------------------------------
@@ -170,19 +201,26 @@ export default async function OverviewPage() {
   // -------------------------------------------------------------------------
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-slate-900">Overview</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-slate-900">Overview</h1>
+        {!thisWeekHasData && (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+            Showing last week &mdash; no data yet this week
+          </span>
+        )}
+      </div>
 
       {/* KPI cards grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Sales This Week"
-          value={formatCurrency(salesThisWeek)}
+          title={`Sales ${periodLabel}`}
+          value={formatCurrency(salesPrimary)}
           change={changeStr(salesWoW)}
           changeType={changeType(salesWoW)}
         />
         <KpiCard
-          title="Units This Week"
-          value={formatNumber(unitsThisWeek)}
+          title={`Units ${periodLabel}`}
+          value={formatNumber(unitsPrimary)}
           change={changeStr(unitsWoW)}
           changeType={changeType(unitsWoW)}
         />
@@ -198,7 +236,7 @@ export default async function OverviewPage() {
         />
         <KpiCard
           title="ROS/Store/Week"
-          value={formatCurrency(rosThisWeek)}
+          value={formatCurrency(rosPrimary)}
           change={changeStr(rosWoW)}
           changeType={changeType(rosWoW)}
         />
