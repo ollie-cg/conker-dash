@@ -7,42 +7,7 @@ interface FiltersProps {
   products: { id: number; name: string }[]
   regions: string[]
   hideProducts?: boolean
-}
-
-type Preset = {
-  label: string
-  days: number
-}
-
-const presets: Preset[] = [
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 4 weeks', days: 28 },
-  { label: 'Last 13 weeks', days: 91 },
-  { label: 'Last 26 weeks', days: 182 },
-]
-
-function formatDate(d: Date): string {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function daysAgo(n: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return formatDate(d)
-}
-
-function yesterday(): string {
-  return daysAgo(1)
-}
-
-/** Compute the number of days between two YYYY-MM-DD strings (inclusive). */
-function daysBetween(from: string, to: string): number {
-  const a = new Date(from + 'T00:00:00')
-  const b = new Date(to + 'T00:00:00')
-  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  hideRegions?: boolean
 }
 
 // ─── Multi-select dropdown ──────────────────────────────────────────────────
@@ -145,14 +110,12 @@ function MultiSelect({
 
 // ─── Filters component ──────────────────────────────────────────────────────
 
-export default function Filters({ products, regions, hideProducts }: FiltersProps) {
+export default function Filters({ products, regions, hideProducts, hideRegions }: FiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   // Read current filter values from URL
-  const currentFrom = searchParams.get('from') ?? daysAgo(28)
-  const currentTo = searchParams.get('to') ?? yesterday()
   const currentProducts = searchParams.get('products')
     ? searchParams
         .get('products')!
@@ -183,30 +146,6 @@ export default function Filters({ products, regions, hideProducts }: FiltersProp
     [router, pathname, searchParams],
   )
 
-  // ── Preset detection ────────────────────────────────────────────────────
-  const activePreset = (() => {
-    const yest = yesterday()
-    if (currentTo !== yest) return null
-    const span = daysBetween(currentFrom, currentTo)
-    return presets.find((p) => p.days === span) ?? null
-  })()
-
-  // ── Event handlers ──────────────────────────────────────────────────────
-  const handlePreset = (days: number) => {
-    pushParams({
-      from: daysAgo(days),
-      to: yesterday(),
-    })
-  }
-
-  const handleFromChange = (value: string) => {
-    pushParams({ from: value })
-  }
-
-  const handleToChange = (value: string) => {
-    pushParams({ to: value })
-  }
-
   const handleProductsChange = (values: string[]) => {
     pushParams({
       products: values.length > 0 ? values.join(',') : null,
@@ -221,47 +160,6 @@ export default function Filters({ products, regions, hideProducts }: FiltersProp
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-      {/* Date presets */}
-      <div className="flex items-center gap-1.5">
-        {presets.map((preset) => (
-          <button
-            key={preset.days}
-            type="button"
-            onClick={() => handlePreset(preset.days)}
-            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              activePreset?.days === preset.days
-                ? 'bg-sky-100 text-sky-700'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-            }`}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Separator */}
-      <div className="h-6 w-px bg-slate-200" />
-
-      {/* Custom date inputs */}
-      <div className="flex items-center gap-1.5">
-        <input
-          type="date"
-          value={currentFrom}
-          onChange={(e) => handleFromChange(e.target.value)}
-          className="rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-600 focus:border-sky-300 focus:outline-none focus:ring-1 focus:ring-sky-300"
-        />
-        <span className="text-xs text-slate-400">to</span>
-        <input
-          type="date"
-          value={currentTo}
-          onChange={(e) => handleToChange(e.target.value)}
-          className="rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-600 focus:border-sky-300 focus:outline-none focus:ring-1 focus:ring-sky-300"
-        />
-      </div>
-
-      {/* Separator */}
-      <div className="h-6 w-px bg-slate-200" />
-
       {/* Product selector */}
       {!hideProducts && (
         <MultiSelect
@@ -274,13 +172,16 @@ export default function Filters({ products, regions, hideProducts }: FiltersProp
       )}
 
       {/* Region selector */}
-      <MultiSelect
-        label="Regions"
-        allLabel="All Regions"
-        options={regions.map((r) => ({ value: r, label: r }))}
-        selected={currentRegions}
-        onChange={handleRegionsChange}
-      />
+      {!hideRegions && (
+        <MultiSelect
+          label="Regions"
+          allLabel="All Regions"
+          options={regions.map((r) => ({ value: r, label: r }))}
+          selected={currentRegions}
+          onChange={handleRegionsChange}
+        />
+      )}
+
     </div>
   )
 }
