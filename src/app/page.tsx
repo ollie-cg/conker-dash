@@ -1,287 +1,207 @@
-import KpiCard from "@/components/kpi-card"
-import Sparkline from "@/components/charts/sparkline"
+import { parseBootsFilters } from '@/lib/boots-filters'
 import {
-  getSalesForPeriod,
-  getStoresStocking,
-  getStoresScanning,
-  getWeeklySales,
-  getWeeklyStoresScanning,
-  getForecasts,
-  getTargets,
-  getRisksAndOpps,
-  getDataDateRange,
-} from "@/lib/queries"
+  getBootsSalesForPeriod,
+  getBootsStoresScanning,
+  getBootsOnlineShare,
+  getBootsWeeklySales,
+  getBootsDataDateRange,
+} from '@/lib/boots-queries'
 import {
   formatCurrency,
   formatNumber,
   formatPercent,
   percentChange,
-} from "@/lib/utils"
+} from '@/lib/utils'
+import KpiCard from '@/components/kpi-card'
+import TimeRangeSelect from '@/components/time-range-select'
+import SalesChart from '@/components/charts/sales-chart'
+import MetricToggle from './metric-toggle'
 
 // ---------------------------------------------------------------------------
-// Date helpers
+// Helpers
 // ---------------------------------------------------------------------------
 
-/** Get Monday of the week containing the given date (ISO weeks: Mon-Sun) */
-function getMonday(d: Date): Date {
-  const result = new Date(d)
-  const day = result.getDay() // 0=Sun, 1=Mon, ...
-  const diff = day === 0 ? -6 : 1 - day
-  result.setDate(result.getDate() + diff)
-  result.setHours(0, 0, 0, 0)
-  return result
+function changeType(val: number): 'positive' | 'negative' | 'neutral' {
+  if (val > 0) return 'positive'
+  if (val < 0) return 'negative'
+  return 'neutral'
 }
 
-/** Format a Date as "YYYY-MM-DD" */
-function fmt(d: Date): string {
-  return d.toISOString().slice(0, 10)
+function changeStr(val: number): string {
+  const sign = val > 0 ? '+' : ''
+  return `${sign}${val.toFixed(1)}% WoW`
 }
 
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function OverviewPage() {
-  const { maxDate } = getDataDateRange()
-  const today = new Date(maxDate + 'T00:00:00')
+export default async function BootsOverviewPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const filters = parseBootsFilters(searchParams)
+  const { maxDate } = getBootsDataDateRange()
+  const metric: 'revenue' | 'units' =
+    searchParams.metric === 'units' ? 'units' : 'revenue'
 
-  // This week: Monday..Sunday
-  const thisMonday = getMonday(today)
-  const thisSunday = new Date(thisMonday)
-  thisSunday.setDate(thisSunday.getDate() + 6)
+  // Calculate previous period (same length, immediately before startDate)
+  const startMs = new Date(filters.startDate + 'T00:00:00').getTime()
+  const endMs = new Date(filters.endDate + 'T00:00:00').getTime()
+  const periodLengthMs = endMs - startMs
+  const prevEndDate = new Date(startMs - 24 * 60 * 60 * 1000) // day before startDate
+  const prevStartDate = new Date(prevEndDate.getTime() - periodLengthMs)
 
-  // Last week: previous Monday..Sunday
-  const lastMonday = new Date(thisMonday)
-  lastMonday.setDate(lastMonday.getDate() - 7)
-  const lastSunday = new Date(lastMonday)
-  lastSunday.setDate(lastSunday.getDate() + 6)
+  const fmt = (d: Date): string => d.toISOString().slice(0, 10)
+  const prevStart = fmt(prevStartDate)
+  const prevEnd = fmt(prevEndDate)
 
-  // Two weeks ago: Monday..Sunday (for WoW comparison when falling back)
-  const twoWeeksAgoMonday = new Date(lastMonday)
-  twoWeeksAgoMonday.setDate(twoWeeksAgoMonday.getDate() - 7)
-  const twoWeeksAgoSunday = new Date(twoWeeksAgoMonday)
-  twoWeeksAgoSunday.setDate(twoWeeksAgoSunday.getDate() + 6)
-
-  // 12 weeks back from thisMonday
-  const twelveWeeksAgo = new Date(thisMonday)
-  twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7)
-
-  const thisWeekStart = fmt(thisMonday)
-  const thisWeekEnd = fmt(thisSunday)
-  const lastWeekStart = fmt(lastMonday)
-  const lastWeekEnd = fmt(lastSunday)
-  const twoWeeksAgoStart = fmt(twoWeeksAgoMonday)
-  const twoWeeksAgoEnd = fmt(twoWeeksAgoSunday)
-  const twelveWeeksAgoStr = fmt(twelveWeeksAgo)
-
-  // -------------------------------------------------------------------------
-  // Parallel data fetching
-  // -------------------------------------------------------------------------
+  // Fetch all data in parallel
   const [
-    thisWeekSales,
-    lastWeekSales,
-    twoWeeksAgoSales,
-    storesStocking,
-    thisWeekStoresScanning,
-    lastWeekStoresScanning,
-    weeklyS,
-    weeklyStoresScanning,
-    thisWeekForecasts,
-    lastWeekForecasts,
-    thisWeekTargets,
-    lastWeekTargets,
-    openRisksAndOpps,
+    currentSales,
+    prevSales,
+    currentScanning,
+    prevScanning,
+    currentOnlineShare,
+    prevOnlineShare,
+    weeklySales,
   ] = await Promise.all([
-    getSalesForPeriod({ startDate: thisWeekStart, endDate: thisWeekEnd }),
-    getSalesForPeriod({ startDate: lastWeekStart, endDate: lastWeekEnd }),
-    getSalesForPeriod({ startDate: twoWeeksAgoStart, endDate: twoWeeksAgoEnd }),
-    getStoresStocking({ asOfDate: fmt(today) }),
-    getStoresScanning({ startDate: thisWeekStart, endDate: thisWeekEnd }),
-    getStoresScanning({ startDate: lastWeekStart, endDate: lastWeekEnd }),
-    getWeeklySales({ startDate: twelveWeeksAgoStr, endDate: thisWeekEnd }),
-    getWeeklyStoresScanning({
-      startDate: twelveWeeksAgoStr,
-      endDate: thisWeekEnd,
-    }),
-    getForecasts({ startDate: thisWeekStart, endDate: thisWeekEnd }),
-    getForecasts({ startDate: lastWeekStart, endDate: lastWeekEnd }),
-    getTargets({ startDate: thisWeekStart, endDate: thisWeekEnd }),
-    getTargets({ startDate: lastWeekStart, endDate: lastWeekEnd }),
-    getRisksAndOpps({ status: "open" }),
+    getBootsSalesForPeriod({ startDate: filters.startDate, endDate: filters.endDate }),
+    getBootsSalesForPeriod({ startDate: prevStart, endDate: prevEnd }),
+    getBootsStoresScanning({ startDate: filters.startDate, endDate: filters.endDate }),
+    getBootsStoresScanning({ startDate: prevStart, endDate: prevEnd }),
+    getBootsOnlineShare({ startDate: filters.startDate, endDate: filters.endDate }),
+    getBootsOnlineShare({ startDate: prevStart, endDate: prevEnd }),
+    getBootsWeeklySales({ startDate: filters.startDate, endDate: filters.endDate }),
   ])
 
-  // -------------------------------------------------------------------------
-  // Smart period selection: if "this week" has no data, fall back to last week
-  // -------------------------------------------------------------------------
-  const thisWeekHasData = thisWeekSales.totalRevenue > 0
+  // ---------------------------------------------------------------------------
+  // Derived KPIs
+  // ---------------------------------------------------------------------------
 
-  // Primary period = the week we display as "current"
-  // Comparison period = the week before the primary period (for WoW)
-  const primarySales = thisWeekHasData ? thisWeekSales : lastWeekSales
-  const comparisonSales = thisWeekHasData ? lastWeekSales : twoWeeksAgoSales
-  const primaryScanning = thisWeekHasData
-    ? thisWeekStoresScanning
-    : lastWeekStoresScanning
-  const forecastRows = thisWeekHasData ? thisWeekForecasts : lastWeekForecasts
-  const targetRows = thisWeekHasData ? thisWeekTargets : lastWeekTargets
+  // Revenue
+  const revenueWoW = percentChange(currentSales.totalRevenue, prevSales.totalRevenue)
 
-  const periodLabel = thisWeekHasData ? "This Week" : "Last Week"
-  const comparisonLabel = thisWeekHasData ? "WoW" : "vs Prior Week"
+  // Units
+  const unitsWoW = percentChange(currentSales.totalUnits, prevSales.totalUnits)
 
-  // -------------------------------------------------------------------------
-  // Derived KPI values
-  // -------------------------------------------------------------------------
+  // Stores Scanning
+  const scanningCount = currentScanning.count
+  const scanningTotal = currentScanning.total
 
-  // Sales & Units
-  const salesPrimary = primarySales.totalRevenue
-  const salesComparison = comparisonSales.totalRevenue
-  const unitsPrimary = primarySales.totalUnits
-  const unitsComparison = comparisonSales.totalUnits
+  // ROS (Revenue per Store scanning, per week)
+  const periodDays =
+    Math.max(1, (endMs - startMs) / (24 * 60 * 60 * 1000))
+  const periodWeeks = Math.max(1, periodDays / 7)
+  const rosCurrent =
+    scanningCount > 0 ? currentSales.totalRevenue / scanningCount / periodWeeks : 0
+  const prevScanningCount = prevScanning.count
+  const prevPeriodDays =
+    Math.max(1, (prevEndDate.getTime() - prevStartDate.getTime()) / (24 * 60 * 60 * 1000))
+  const prevPeriodWeeks = Math.max(1, prevPeriodDays / 7)
+  const rosPrev =
+    prevScanningCount > 0 ? prevSales.totalRevenue / prevScanningCount / prevPeriodWeeks : 0
+  const rosWoW = percentChange(rosCurrent, rosPrev)
 
-  const salesWoW = percentChange(salesPrimary, salesComparison)
-  const unitsWoW = percentChange(unitsPrimary, unitsComparison)
+  // ASP (Average Selling Price)
+  const aspCurrent =
+    currentSales.totalUnits > 0
+      ? currentSales.totalRevenue / currentSales.totalUnits
+      : 0
+  const aspPrev =
+    prevSales.totalUnits > 0
+      ? prevSales.totalRevenue / prevSales.totalUnits
+      : 0
+  const aspWoW = percentChange(aspCurrent, aspPrev)
 
-  // Stores
-  const stockingCount = storesStocking.count
-  const scanningCount = primaryScanning.count
-  const scanningPct =
-    stockingCount > 0 ? (scanningCount / stockingCount) * 100 : 0
+  // Online Share (percentage point change)
+  const onlineShareCurrent = currentOnlineShare.share
+  const onlineSharePrev = prevOnlineShare.share
+  const onlineSharePpChange = onlineShareCurrent - onlineSharePrev
 
-  // ROS / store / week
-  const rosPrimary = stockingCount > 0 ? salesPrimary / stockingCount : 0
-  const rosComparison =
-    stockingCount > 0 ? salesComparison / stockingCount : 0
-  const rosWoW = percentChange(rosPrimary, rosComparison)
-
-  // Forecast (sum all products for period)
-  const forecastRevenue = forecastRows.reduce(
-    (acc, r) => acc + Number(r.revenue),
-    0
-  )
-  const vsForecast =
-    forecastRevenue > 0 ? (salesPrimary / forecastRevenue) * 100 : 0
-
-  // Target (sum all products for period)
-  const targetRevenue = targetRows.reduce(
-    (acc, r) => acc + Number(r.revenue),
-    0
-  )
-  const vsTarget =
-    targetRevenue > 0 ? (salesPrimary / targetRevenue) * 100 : 0
-
-  // Risks & Opps
-  const openRisks = openRisksAndOpps.filter((r) => r.type === "risk")
-  const openOpps = openRisksAndOpps.filter((r) => r.type === "opportunity")
-
-  // -------------------------------------------------------------------------
-  // Sparkline data
-  // -------------------------------------------------------------------------
-  const revenueSparkline = weeklyS.map((w) => ({ value: w.revenue }))
-  const unitsSparkline = weeklyS.map((w) => ({ value: w.units }))
-  const scanningSparkline = weeklyStoresScanning.map((w) => ({
-    value: w.count,
+  // ---------------------------------------------------------------------------
+  // Chart data: map weekStart -> date for SalesChart compatibility
+  // ---------------------------------------------------------------------------
+  const chartData = weeklySales.map((w) => ({
+    date: w.weekStart,
+    units: w.units,
+    revenue: w.revenue,
   }))
 
-  // -------------------------------------------------------------------------
-  // Helpers for change display
-  // -------------------------------------------------------------------------
-  function changeType(
-    val: number
-  ): "positive" | "negative" | "neutral" {
-    if (val > 0) return "positive"
-    if (val < 0) return "negative"
-    return "neutral"
-  }
-
-  function changeStr(val: number): string {
-    const sign = val > 0 ? "+" : ""
-    return `${sign}${val.toFixed(1)}% ${comparisonLabel}`
-  }
-
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Render
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">Overview</h1>
-        {!thisWeekHasData && (
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
-            Showing last week &mdash; no data yet this week
-          </span>
-        )}
+    <>
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex h-14 flex-shrink-0 items-center gap-3 border-b border-slate-200 bg-slate-50/50 px-8 backdrop-blur-sm">
+        <h1 className="text-sm font-medium text-slate-900">Dashboard</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <TimeRangeSelect maxDate={maxDate} />
+        </div>
       </div>
 
+      <div className="flex min-h-0 flex-1 flex-col p-8">
       {/* KPI cards grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
-          title={`Sales ${periodLabel}`}
-          value={formatCurrency(salesPrimary)}
-          change={changeStr(salesWoW)}
-          changeType={changeType(salesWoW)}
+          title="Revenue"
+          value={formatCurrency(currentSales.totalRevenue)}
+          change={changeStr(revenueWoW)}
+          changeType={changeType(revenueWoW)}
         />
         <KpiCard
-          title={`Units ${periodLabel}`}
-          value={formatNumber(unitsPrimary)}
+          title="Units"
+          value={formatNumber(currentSales.totalUnits)}
           change={changeStr(unitsWoW)}
           changeType={changeType(unitsWoW)}
         />
         <KpiCard
-          title="Stores Stocking"
-          value={formatNumber(stockingCount)}
-        />
-        <KpiCard
           title="Stores Scanning"
-          value={`${formatNumber(scanningCount)} of ${formatNumber(stockingCount)}`}
-          change={formatPercent(scanningPct)}
-          changeType={scanningPct >= 50 ? "positive" : "negative"}
+          value={`${formatNumber(scanningCount)} of ${formatNumber(scanningTotal)}`}
+          change={formatPercent(
+            scanningTotal > 0 ? (scanningCount / scanningTotal) * 100 : 0,
+          )}
+          changeType={
+            scanningTotal > 0 && scanningCount / scanningTotal >= 0.5
+              ? 'positive'
+              : 'negative'
+          }
         />
         <KpiCard
           title="ROS/Store/Week"
-          value={formatCurrency(rosPrimary)}
+          value={formatCurrency(rosCurrent)}
           change={changeStr(rosWoW)}
           changeType={changeType(rosWoW)}
         />
         <KpiCard
-          title="vs Forecast"
-          value={formatPercent(vsForecast)}
-          changeType={vsForecast >= 100 ? "positive" : "negative"}
-          change={vsForecast >= 100 ? "On/above forecast" : "Below forecast"}
+          title="ASP"
+          value={formatCurrency(aspCurrent)}
+          change={changeStr(aspWoW)}
+          changeType={changeType(aspWoW)}
         />
         <KpiCard
-          title="vs Target"
-          value={formatPercent(vsTarget)}
-          changeType={vsTarget >= 100 ? "positive" : "negative"}
-          change={vsTarget >= 100 ? "On/above target" : "Below target"}
-        />
-        <KpiCard
-          title="Open Risks & Opps"
-          value={`${openRisks.length + openOpps.length}`}
-          change={`${openRisks.length} risks, ${openOpps.length} opps`}
-          changeType="neutral"
+          title="Online Share"
+          value={formatPercent(onlineShareCurrent)}
+          change={`${onlineSharePpChange >= 0 ? '+' : ''}${onlineSharePpChange.toFixed(1)}pp WoW`}
+          changeType={changeType(onlineSharePpChange)}
         />
       </div>
 
-      {/* 12-week sparklines */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">
-          12-Week Trends
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-white p-4 shadow-sm border border-slate-100">
-            <p className="text-sm text-slate-500 mb-2">Weekly Revenue</p>
-            <Sparkline data={revenueSparkline} color="#3b82f6" />
-          </div>
-          <div className="rounded-lg bg-white p-4 shadow-sm border border-slate-100">
-            <p className="text-sm text-slate-500 mb-2">Weekly Units</p>
-            <Sparkline data={unitsSparkline} color="#10b981" />
-          </div>
-          <div className="rounded-lg bg-white p-4 shadow-sm border border-slate-100">
-            <p className="text-sm text-slate-500 mb-2">Weekly Stores Scanning</p>
-            <Sparkline data={scanningSparkline} color="#f59e0b" />
-          </div>
+      {/* Weekly trend chart */}
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">
+            Weekly {metric === 'revenue' ? 'Revenue' : 'Units'}
+          </h2>
+          <MetricToggle current={metric} />
+        </div>
+        <div className="min-h-0 flex-1">
+          <SalesChart data={chartData} metric={metric} />
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { parseBootsFilters } from '@/lib/boots-filters'
-import { getBootsStoreDetail } from '@/lib/boots-queries'
+import { getBootsStoreDetail, getBootsDataDateRange } from '@/lib/boots-queries'
 import { formatCurrency, formatNumber } from '@/lib/utils'
 import { CATEGORY_BG_CLASSES } from '@/lib/boots-categories'
 import KpiCard from '@/components/kpi-card'
@@ -21,6 +21,7 @@ export default async function StoreDetailPage({
   if (isNaN(storeId)) notFound()
 
   const filters = parseBootsFilters(searchParams)
+  const { maxDate } = getBootsDataDateRange()
   const metric: 'revenue' | 'units' =
     searchParams.metric === 'units' ? 'units' : 'revenue'
 
@@ -54,7 +55,7 @@ export default async function StoreDetailPage({
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <TimeRangeSelect />
+          <TimeRangeSelect maxDate={maxDate} />
         </div>
       </div>
 

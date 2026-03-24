@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <div className="flex min-h-screen">
+        <div className="flex h-screen overflow-hidden">
           {/* Sidebar */}
           <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-slate-900">
             <div className="px-6 py-5">
@@ -39,7 +39,7 @@ export default function RootLayout({
           </aside>
 
           {/* Main content */}
-          <main className="ml-60 flex-1 bg-slate-50 p-8">
+          <main className="ml-60 flex h-screen flex-1 flex-col overflow-hidden bg-slate-50">
             {children}
           </main>
         </div>

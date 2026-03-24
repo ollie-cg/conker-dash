@@ -44,14 +44,14 @@ function formatTooltipValue(value: number, metric: "revenue" | "units"): string 
 export default function SalesChart({ data, metric }: SalesChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex h-[350px] items-center justify-center text-sm text-slate-400">
+      <div className="flex h-full items-center justify-center text-sm text-slate-400">
         No sales data for the selected period
       </div>
     )
   }
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
+    <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">

@@ -1,0 +1,998 @@
+[
+  {
+    "id": 1,
+    "code": "0885",
+    "name": "London St Pancras Stn",
+    "format": "boots"
+  },
+  {
+    "id": 2,
+    "code": "0035",
+    "name": "Birmingham Bull Ring Sc",
+    "format": "boots"
+  },
+  {
+    "id": 3,
+    "code": "0037",
+    "name": "Grantham High St",
+    "format": "boots"
+  },
+  {
+    "id": 4,
+    "code": "0055",
+    "name": "Chesterfield Low Pavemnt",
+    "format": "boots"
+  },
+  {
+    "id": 5,
+    "code": "0064",
+    "name": "Burton On T Coopers Sq",
+    "format": "boots"
+  },
+  {
+    "id": 6,
+    "code": "0080",
+    "name": "Kettering Gold St",
+    "format": "boots"
+  },
+  {
+    "id": 7,
+    "code": "0086",
+    "name": "Bury St Edmunds Cornhill",
+    "format": "boots"
+  },
+  {
+    "id": 8,
+    "code": "0089",
+    "name": "Kings Lynn High St",
+    "format": "boots"
+  },
+  {
+    "id": 9,
+    "code": "0163",
+    "name": "Stoke On T Hanley",
+    "format": "boots"
+  },
+  {
+    "id": 10,
+    "code": "0168",
+    "name": "Newcastle U Lyme High St",
+    "format": "boots"
+  },
+  {
+    "id": 11,
+    "code": "0183",
+    "name": "Stafford Market Sq",
+    "format": "boots"
+  },
+  {
+    "id": 12,
+    "code": "0222",
+    "name": "Basingstoke Old Mall",
+    "format": "boots"
+  },
+  {
+    "id": 13,
+    "code": "0225",
+    "name": "Wolverhmptn Dudley St",
+    "format": "boots"
+  },
+  {
+    "id": 14,
+    "code": "0233",
+    "name": "Sutton Cold Gracechch Sc",
+    "format": "boots"
+  },
+  {
+    "id": 15,
+    "code": "0240",
+    "name": "Maidenhead High St",
+    "format": "boots"
+  },
+  {
+    "id": 16,
+    "code": "0241",
+    "name": "Witney High St",
+    "format": "boots"
+  },
+  {
+    "id": 17,
+    "code": "0243",
+    "name": "Bristol Broadmead",
+    "format": "boots"
+  },
+  {
+    "id": 18,
+    "code": "0272",
+    "name": "Chester Foregate St",
+    "format": "boots"
+  },
+  {
+    "id": 19,
+    "code": "0274",
+    "name": "Shrewsbury Pride Hill",
+    "format": "boots"
+  },
+  {
+    "id": 20,
+    "code": "0280",
+    "name": "Swansea The Quadrant",
+    "format": "boots"
+  },
+  {
+    "id": 21,
+    "code": "0290",
+    "name": "Neath Water St",
+    "format": "boots"
+  },
+  {
+    "id": 22,
+    "code": "0292",
+    "name": "Newport Gwent Commercial",
+    "format": "boots"
+  },
+  {
+    "id": 23,
+    "code": "0293",
+    "name": "Carmarthen Red St",
+    "format": "boots"
+  },
+  {
+    "id": 24,
+    "code": "0317",
+    "name": "Truro Pydar St",
+    "format": "boots"
+  },
+  {
+    "id": 25,
+    "code": "0335",
+    "name": "Solihull Mell Square",
+    "format": "boots"
+  },
+  {
+    "id": 26,
+    "code": "0459",
+    "name": "Newbury Northbrook St",
+    "format": "boots"
+  },
+  {
+    "id": 27,
+    "code": "0520",
+    "name": "Leeds White Rose Sc",
+    "format": "boots"
+  },
+  {
+    "id": 28,
+    "code": "0568",
+    "name": "Sunderland The Bridges",
+    "format": "boots"
+  },
+  {
+    "id": 29,
+    "code": "0602",
+    "name": "Glasgow Enoch Sq",
+    "format": "boots"
+  },
+  {
+    "id": 30,
+    "code": "0640",
+    "name": "Ayr High St",
+    "format": "boots"
+  },
+  {
+    "id": 31,
+    "code": "0643",
+    "name": "Bangor Cd Bloomfield Sc",
+    "format": "boots"
+  },
+  {
+    "id": 32,
+    "code": "0674",
+    "name": "Perth High St",
+    "format": "boots"
+  },
+  {
+    "id": 33,
+    "code": "0715",
+    "name": "Basildon Town Sq",
+    "format": "boots"
+  },
+  {
+    "id": 34,
+    "code": "0739",
+    "name": "Hemel Hempstead Marlowes",
+    "format": "boots"
+  },
+  {
+    "id": 35,
+    "code": "0752",
+    "name": "Lond Hammersmith King St",
+    "format": "boots"
+  },
+  {
+    "id": 36,
+    "code": "0784",
+    "name": "Harrow St George Sc",
+    "format": "boots"
+  },
+  {
+    "id": 37,
+    "code": "0785",
+    "name": "Lond Wood Green High Rd",
+    "format": "boots"
+  },
+  {
+    "id": 38,
+    "code": "0795",
+    "name": "St Albans St Peters St",
+    "format": "boots"
+  },
+  {
+    "id": 39,
+    "code": "0814",
+    "name": "Eastleigh Swan Centre",
+    "format": "boots"
+  },
+  {
+    "id": 40,
+    "code": "0846",
+    "name": "Bexleyheath Broadway Sc",
+    "format": "boots"
+  },
+  {
+    "id": 41,
+    "code": "0906",
+    "name": "Camberley Obelisk Way",
+    "format": "boots"
+  },
+  {
+    "id": 42,
+    "code": "0910",
+    "name": "Southampton Above Bar St",
+    "format": "boots"
+  },
+  {
+    "id": 43,
+    "code": "0926",
+    "name": "Romford The Liberty",
+    "format": "boots"
+  },
+  {
+    "id": 44,
+    "code": "0940",
+    "name": "Chatham Pentagon Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 45,
+    "code": "0944",
+    "name": "Southend The Royals Sc",
+    "format": "boots"
+  },
+  {
+    "id": 46,
+    "code": "0945",
+    "name": "Dartford High St",
+    "format": "boots"
+  },
+  {
+    "id": 47,
+    "code": "0972",
+    "name": "Worthing Montague St",
+    "format": "boots"
+  },
+  {
+    "id": 48,
+    "code": "0985",
+    "name": "East Grinstead London Rd",
+    "format": "boots"
+  },
+  {
+    "id": 49,
+    "code": "0996",
+    "name": "Jersey St Helier Qun St",
+    "format": "boots"
+  },
+  {
+    "id": 50,
+    "code": "1016",
+    "name": "Fleet Rd",
+    "format": "boots"
+  },
+  {
+    "id": 51,
+    "code": "1038",
+    "name": "Slough High St",
+    "format": "boots"
+  },
+  {
+    "id": 52,
+    "code": "1080",
+    "name": "Bognor Regis London Rd",
+    "format": "boots"
+  },
+  {
+    "id": 53,
+    "code": "1087",
+    "name": "Orpington High St",
+    "format": "boots"
+  },
+  {
+    "id": 54,
+    "code": "1140",
+    "name": "Bury The Mall",
+    "format": "boots"
+  },
+  {
+    "id": 55,
+    "code": "1142",
+    "name": "Wigan Grand Arcade Sc",
+    "format": "boots"
+  },
+  {
+    "id": 56,
+    "code": "1189",
+    "name": "Lancaster St Nicholas",
+    "format": "boots"
+  },
+  {
+    "id": 57,
+    "code": "1191",
+    "name": "Warrington Gemini Retail",
+    "format": "boots"
+  },
+  {
+    "id": 58,
+    "code": "1230",
+    "name": "Blackpool Bank Hey St",
+    "format": "boots"
+  },
+  {
+    "id": 59,
+    "code": "1259",
+    "name": "Kendal Stricklandgate",
+    "format": "boots"
+  },
+  {
+    "id": 60,
+    "code": "1415",
+    "name": "Petersfield High St",
+    "format": "boots"
+  },
+  {
+    "id": 61,
+    "code": "1449",
+    "name": "Crawley County Mall",
+    "format": "boots"
+  },
+  {
+    "id": 62,
+    "code": "1483",
+    "name": "Norwich Chapelfield",
+    "format": "boots"
+  },
+  {
+    "id": 63,
+    "code": "1488",
+    "name": "Salisbury Silver St",
+    "format": "boots"
+  },
+  {
+    "id": 64,
+    "code": "1527",
+    "name": "Newton Abbot Courtney St",
+    "format": "boots"
+  },
+  {
+    "id": 65,
+    "code": "1666",
+    "name": "London Clapham High St",
+    "format": "boots"
+  },
+  {
+    "id": 66,
+    "code": "1667",
+    "name": "Beverley Toll Gavel",
+    "format": "boots"
+  },
+  {
+    "id": 67,
+    "code": "1700",
+    "name": "Dublin Jervis Sc",
+    "format": "boots"
+  },
+  {
+    "id": 68,
+    "code": "1705",
+    "name": "Dublin Liffey Valley",
+    "format": "boots"
+  },
+  {
+    "id": 69,
+    "code": "1715",
+    "name": "Dublin Swords Pavilions",
+    "format": "boots"
+  },
+  {
+    "id": 70,
+    "code": "1744",
+    "name": "Cork Half Moon St",
+    "format": "boots"
+  },
+  {
+    "id": 71,
+    "code": "1784",
+    "name": "Blanchardstown 223 Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 72,
+    "code": "1815",
+    "name": "Chelmsford High Chelmer",
+    "format": "boots"
+  },
+  {
+    "id": 73,
+    "code": "1840",
+    "name": "Norwich Castle Mall",
+    "format": "boots"
+  },
+  {
+    "id": 74,
+    "code": "1983",
+    "name": "Longbridge Town Centre",
+    "format": "boots"
+  },
+  {
+    "id": 75,
+    "code": "1993",
+    "name": "Edinburgh St James",
+    "format": "boots"
+  },
+  {
+    "id": 76,
+    "code": "1999",
+    "name": "Biggleswade Shopping Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 77,
+    "code": "2004",
+    "name": "York 43 Coney Street",
+    "format": "boots"
+  },
+  {
+    "id": 78,
+    "code": "2011",
+    "name": "Bath Southgate Centre",
+    "format": "boots"
+  },
+  {
+    "id": 79,
+    "code": "2053",
+    "name": "Dudley Merry Hill Centre",
+    "format": "boots"
+  },
+  {
+    "id": 80,
+    "code": "2106",
+    "name": "Handforth Dean Retail Pk",
+    "format": "boots"
+  },
+  {
+    "id": 81,
+    "code": "2145",
+    "name": "Woking Wolsey Place SC",
+    "format": "boots"
+  },
+  {
+    "id": 82,
+    "code": "2153",
+    "name": "Rochdale Riverside SC",
+    "format": "boots"
+  },
+  {
+    "id": 83,
+    "code": "2161",
+    "name": "Penhale Kingsley Village",
+    "format": "boots"
+  },
+  {
+    "id": 84,
+    "code": "2163",
+    "name": "Lincoln High Str 196-199",
+    "format": "boots"
+  },
+  {
+    "id": 85,
+    "code": "2261",
+    "name": "Battersea Power Station",
+    "format": "boots"
+  },
+  {
+    "id": 86,
+    "code": "2263",
+    "name": "Nottingham Riverside Prk",
+    "format": "boots"
+  },
+  {
+    "id": 87,
+    "code": "5066",
+    "name": "London Wandsworth",
+    "format": "boots"
+  },
+  {
+    "id": 88,
+    "code": "5072",
+    "name": "Halifax Market St",
+    "format": "boots"
+  },
+  {
+    "id": 89,
+    "code": "6017",
+    "name": "Irvine Fullerton Square",
+    "format": "boots"
+  },
+  {
+    "id": 90,
+    "code": "6073",
+    "name": "Glasgow Buchanan Gallery",
+    "format": "boots"
+  },
+  {
+    "id": 91,
+    "code": "6386",
+    "name": "Trowbridge Gateway",
+    "format": "boots"
+  },
+  {
+    "id": 92,
+    "code": "6403",
+    "name": "Edinburgh Craigleith",
+    "format": "boots"
+  },
+  {
+    "id": 93,
+    "code": "6404",
+    "name": "Birm Fort Dunlop",
+    "format": "boots"
+  },
+  {
+    "id": 94,
+    "code": "6405",
+    "name": "Cheshunt Brookfield Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 95,
+    "code": "6408",
+    "name": "Prestatyn Shopping Park",
+    "format": "boots"
+  },
+  {
+    "id": 96,
+    "code": "6411",
+    "name": "Wednesbury Gallagher Rp",
+    "format": "boots"
+  },
+  {
+    "id": 97,
+    "code": "6417",
+    "name": "Hull Kingswood Rp",
+    "format": "boots"
+  },
+  {
+    "id": 98,
+    "code": "6421",
+    "name": "Coventry Central 6 Rp",
+    "format": "boots"
+  },
+  {
+    "id": 99,
+    "code": "6434",
+    "name": "Wrexham Rp",
+    "format": "boots"
+  },
+  {
+    "id": 100,
+    "code": "6438",
+    "name": "Belfast Boucher Road",
+    "format": "boots"
+  },
+  {
+    "id": 101,
+    "code": "6442",
+    "name": "Hayle West Cornwall Sc",
+    "format": "boots"
+  },
+  {
+    "id": 102,
+    "code": "6444",
+    "name": "Bolton Middlebrook Rp",
+    "format": "boots"
+  },
+  {
+    "id": 103,
+    "code": "6453",
+    "name": "West Brom Grt Bridge St",
+    "format": "boots"
+  },
+  {
+    "id": 104,
+    "code": "6455",
+    "name": "Wigan Robin Park",
+    "format": "boots"
+  },
+  {
+    "id": 105,
+    "code": "6459",
+    "name": "Coventry Arena Rp",
+    "format": "boots"
+  },
+  {
+    "id": 106,
+    "code": "6463",
+    "name": "Milton Keynes Kingston",
+    "format": "boots"
+  },
+  {
+    "id": 107,
+    "code": "6465",
+    "name": "Sutton Cold Prc Alice Dr",
+    "format": "boots"
+  },
+  {
+    "id": 108,
+    "code": "6467",
+    "name": "Bexhill Ravenside Rp",
+    "format": "boots"
+  },
+  {
+    "id": 109,
+    "code": "6474",
+    "name": "Basingstoke Chineham Sc",
+    "format": "boots"
+  },
+  {
+    "id": 110,
+    "code": "6476",
+    "name": "Newport Rp Gwent",
+    "format": "boots"
+  },
+  {
+    "id": 111,
+    "code": "6485",
+    "name": "London Clapham Falcon Ln",
+    "format": "boots"
+  },
+  {
+    "id": 112,
+    "code": "6487",
+    "name": "Kirkcaldy Fife Cntral Rp",
+    "format": "boots"
+  },
+  {
+    "id": 113,
+    "code": "6488",
+    "name": "Rugby Junction One Rp",
+    "format": "boots"
+  },
+  {
+    "id": 114,
+    "code": "6497",
+    "name": "Romford The Brewery",
+    "format": "boots"
+  },
+  {
+    "id": 115,
+    "code": "6515",
+    "name": "Milton Keynes Westcroft",
+    "format": "boots"
+  },
+  {
+    "id": 116,
+    "code": "6523",
+    "name": "Bournemouth Castle P Sc",
+    "format": "boots"
+  },
+  {
+    "id": 117,
+    "code": "6525",
+    "name": "Swindon Orbital Rp",
+    "format": "boots"
+  },
+  {
+    "id": 118,
+    "code": "6528",
+    "name": "Swansea Fforest Fach Rp",
+    "format": "boots"
+  },
+  {
+    "id": 119,
+    "code": "6542",
+    "name": "Cardiff Ty Glas Rp",
+    "format": "boots"
+  },
+  {
+    "id": 120,
+    "code": "6547",
+    "name": "Llantrisant Talbt Grn Rp",
+    "format": "boots"
+  },
+  {
+    "id": 121,
+    "code": "6550",
+    "name": "Hull Kingston Rp",
+    "format": "boots"
+  },
+  {
+    "id": 122,
+    "code": "6551",
+    "name": "Durham Pity Me Arnisn Rp",
+    "format": "boots"
+  },
+  {
+    "id": 123,
+    "code": "6559",
+    "name": "Denton Crownpoint Rp",
+    "format": "boots"
+  },
+  {
+    "id": 124,
+    "code": "6565",
+    "name": "Bristol Eastgate Rp",
+    "format": "boots"
+  },
+  {
+    "id": 125,
+    "code": "6566",
+    "name": "Derby Wyvern Rp",
+    "format": "boots"
+  },
+  {
+    "id": 126,
+    "code": "6567",
+    "name": "Sheffield Crystal Pks Rp",
+    "format": "boots"
+  },
+  {
+    "id": 127,
+    "code": "6575",
+    "name": "Swansea Morfa Retail Pk",
+    "format": "boots"
+  },
+  {
+    "id": 128,
+    "code": "6594",
+    "name": "Widnes Shopping Park",
+    "format": "boots"
+  },
+  {
+    "id": 129,
+    "code": "6595",
+    "name": "Poole Commerce Centre",
+    "format": "boots"
+  },
+  {
+    "id": 130,
+    "code": "6599",
+    "name": "Birm St Andrews Rp",
+    "format": "boots"
+  },
+  {
+    "id": 131,
+    "code": "6612",
+    "name": "Llandudno Retail Park",
+    "format": "boots"
+  },
+  {
+    "id": 132,
+    "code": "0006",
+    "name": "Nottingham Victoria Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 133,
+    "code": "0061",
+    "name": "Sheffield Meadowhall Sc",
+    "format": "boots"
+  },
+  {
+    "id": 134,
+    "code": "0085",
+    "name": "Cambridge Petty Cury",
+    "format": "boots"
+  },
+  {
+    "id": 135,
+    "code": "0158",
+    "name": "Manchester Trafford Ctr",
+    "format": "boots"
+  },
+  {
+    "id": 136,
+    "code": "0262",
+    "name": "Milton Keynes Crown Walk",
+    "format": "boots"
+  },
+  {
+    "id": 137,
+    "code": "0310",
+    "name": "Exeter High St",
+    "format": "boots"
+  },
+  {
+    "id": 138,
+    "code": "0323",
+    "name": "Cardiff Queen St",
+    "format": "boots"
+  },
+  {
+    "id": 139,
+    "code": "0330",
+    "name": "Oxford Cornmarket St",
+    "format": "boots"
+  },
+  {
+    "id": 140,
+    "code": "0500",
+    "name": "Leeds Trinity",
+    "format": "boots"
+  },
+  {
+    "id": 141,
+    "code": "0633",
+    "name": "Belfast Donegal Place",
+    "format": "boots"
+  },
+  {
+    "id": 142,
+    "code": "0650",
+    "name": "Edinburgh 101Princes St",
+    "format": "boots"
+  },
+  {
+    "id": 143,
+    "code": "0680",
+    "name": "Newcastle Eldon Sq",
+    "format": "boots"
+  },
+  {
+    "id": 144,
+    "code": "0707",
+    "name": "London Sedley Place",
+    "format": "boots"
+  },
+  {
+    "id": 145,
+    "code": "0746",
+    "name": "London Brent Cross Sc",
+    "format": "boots"
+  },
+  {
+    "id": 146,
+    "code": "0803",
+    "name": "London Liverpool St Stn",
+    "format": "boots"
+  },
+  {
+    "id": 147,
+    "code": "0849",
+    "name": "Kingston U Thms Union St",
+    "format": "boots"
+  },
+  {
+    "id": 148,
+    "code": "0970",
+    "name": "Brighton North St",
+    "format": "boots"
+  },
+  {
+    "id": 149,
+    "code": "1060",
+    "name": "Dartford Bluewater Park",
+    "format": "boots"
+  },
+  {
+    "id": 150,
+    "code": "1150",
+    "name": "Liverpool Clayton Sq Sc",
+    "format": "boots"
+  },
+  {
+    "id": 151,
+    "code": "1200",
+    "name": "Manchester Market Street",
+    "format": "boots"
+  },
+  {
+    "id": 152,
+    "code": "1980",
+    "name": "London WhiteCty SC Ariel",
+    "format": "boots"
+  },
+  {
+    "id": 153,
+    "code": "2012",
+    "name": "London Stratford City",
+    "format": "boots"
+  },
+  {
+    "id": 154,
+    "code": "2089",
+    "name": "Bristol Cribbs Causeway",
+    "format": "boots"
+  },
+  {
+    "id": 155,
+    "code": "2173",
+    "name": "Covent Garden Long Acre",
+    "format": "boots"
+  },
+  {
+    "id": 156,
+    "code": "5002",
+    "name": "Gateshead Metro Centre",
+    "format": "boots"
+  },
+  {
+    "id": 157,
+    "code": "6052",
+    "name": "Glasgow Braehead Centre",
+    "format": "boots"
+  },
+  {
+    "id": 158,
+    "code": "6500",
+    "name": "Leicester Fosse Park",
+    "format": "boots"
+  },
+  {
+    "id": 159,
+    "code": "6526",
+    "name": "Glasgow Fort",
+    "format": "boots"
+  },
+  {
+    "id": 160,
+    "code": "0389",
+    "name": "Penzance Market Jew St",
+    "format": "boots"
+  },
+  {
+    "id": 161,
+    "code": "0622",
+    "name": "Motherwell Brandon Prd",
+    "format": "boots"
+  },
+  {
+    "id": 162,
+    "code": "0987",
+    "name": "Dover Biggin St",
+    "format": "boots"
+  },
+  {
+    "id": 163,
+    "code": "1161",
+    "name": "Birkenhead Grange Rd",
+    "format": "boots"
+  },
+  {
+    "id": 164,
+    "code": "1279",
+    "name": "Workington Murray Rd",
+    "format": "boots"
+  },
+  {
+    "id": 165,
+    "code": "4910",
+    "name": "Boots.com 4910",
+    "format": "online"
+  },
+  {
+    "id": 166,
+    "code": "4915",
+    "name": "Boots.com 4915 ROI",
+    "format": "online"
+  }
+]
