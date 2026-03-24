@@ -5,21 +5,13 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Package,
-  TrendingUp,
   Store,
-  Gauge,
-  Target,
-  AlertTriangle,
 } from 'lucide-react'
 
 const links = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/products', label: 'Products', icon: Package },
-  { href: '/sales', label: 'Sales', icon: TrendingUp },
-  { href: '/distribution', label: 'Distribution', icon: Store },
-  { href: '/ros', label: 'Rate of Sale', icon: Gauge },
-  { href: '/performance', label: 'vs Plan', icon: Target },
-  { href: '/risks', label: 'Risks & Opps', icon: AlertTriangle },
+  { href: '/stores', label: 'Stores', icon: Store },
 ]
 
 export default function Nav() {
@@ -28,8 +20,7 @@ export default function Nav() {
   return (
     <nav className="flex flex-col gap-1 px-3">
       {links.map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href
-
+        const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
         return (
           <Link
             key={href}
