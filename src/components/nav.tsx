@@ -8,6 +8,7 @@ import {
   Store,
   Puzzle,
   Settings,
+  type LucideIcon,
 } from 'lucide-react'
 
 const mainLinks = [
@@ -24,7 +25,7 @@ const bottomLinks = [
 function NavLink({ href, label, icon: Icon, isActive }: {
   href: string
   label: string
-  icon: React.ComponentType<{ size: number; strokeWidth: number }>
+  icon: LucideIcon
   isActive: boolean
 }) {
   return (
